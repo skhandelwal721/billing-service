@@ -18,8 +18,13 @@ class CardNetworkTest {
     }
 
     @Test
+    void detectsAmexFromBin() {
+        assertEquals(CardNetwork.AMEX, CardNetwork.fromBin("378282246310005"));
+    }
+
+    @Test
     void rejectsUnsupportedNetwork() {
-        assertThrows(IllegalArgumentException.class, () -> CardNetwork.fromBin("378282246310005"));
+        assertThrows(IllegalArgumentException.class, () -> CardNetwork.fromBin("6011111111111117"));
     }
 
     /**
@@ -30,5 +35,6 @@ class CardNetworkTest {
     void networkCodesAreStableContractValues() {
         assertEquals("VISA", CardNetwork.VISA.code());
         assertEquals("MASTERCARD", CardNetwork.MASTERCARD.code());
+        assertEquals("AMEX", CardNetwork.AMEX.code());
     }
 }

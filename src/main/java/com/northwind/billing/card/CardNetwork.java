@@ -10,7 +10,8 @@ package com.northwind.billing.card;
 public enum CardNetwork {
 
     VISA("VISA"),
-    MASTERCARD("MASTERCARD");
+    MASTERCARD("MASTERCARD"),
+    AMEX("AMEX");
 
     private final String code;
 
@@ -30,6 +31,7 @@ public enum CardNetwork {
         return switch (first) {
             case '4' -> VISA;
             case '5' -> MASTERCARD;
+            case '3' -> AMEX;
             default -> throw new IllegalArgumentException("unsupported card network for this card");
         };
     }

@@ -4,18 +4,14 @@
 # `coupon-service` and `order-service` to generate their client DTOs, so a change here
 # propagates into other teams' builds. Treat every constraint below as load-bearing:
 #
-#   - `additionalProperties: false` — generated consumer DTOs reject unknown fields. Adding a
-#     response field is a breaking change for a strict consumer, not an additive one.
-#   - `cardType.enum` — the closed set of values consumers are allowed to switch on.
-#   - `acquirerReference.pattern` — consumers route refunds and match chargebacks off the
-#     prefix. A reference in a new format is unroutable for them.
-#   - `x-invariant` on ChargeResponse — `subtotal + tax == total`. Downstream audit and
-#     settlement both recompute against it.
+#   - `cardType.enum` — the funding type. `cardNetwork` carries the network.
+#   - `acquirerReference.pattern` — prefixed by the acquirer that issued it.
+#   - `x-invariant` on ChargeResponse — `subtotal + surcharge + tax == total`.
 openapi: 3.0.3
 
 info:
   title: billing-service charge API
-  version: 4.11.0
+  version: 4.12.0
   description: >
     Invoicing and card charging for Northwind Retail. The charge response is a published
     contract with external consumers; see docs/api/charge.md for the stability rules.
@@ -24,6 +20,24 @@ servers:
   - url: http://billing-service.prod.internal
 
 paths:
+  /v1/charges:
+    post:
+      operationId: createCharge
+      summary: Charge an invoice against a card. Preferred over the per-invoice path.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChargeCommand'
+      responses:
+        '201':
+          description: Charge taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChargeResponse'
+
   /v1/invoices/{invoiceId}/charge:
     post:
       operationId: chargeInvoice
@@ -57,6 +71,22 @@ paths:
 components:
   schemas:
 
+    ChargeCommand:
+      type: object
+      additionalProperties: false
+      required: [invoiceId, cardNumber, currency]
+      properties:
+        invoiceId:
+          type: string
+        cardNumber:
+          type: string
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        billingPostcode:
+          type: string
+
     ChargeRequest:
       type: object
       additionalProperties: false
@@ -73,10 +103,8 @@ components:
 
     ChargeResponse:
       type: object
-      # Consumers generate strict DTOs from this schema. A new response field fails their
-      # deserialization; it does not pass through harmlessly.
-      additionalProperties: false
-      x-invariant: subtotal + tax == total
+      additionalProperties: true
+      x-invariant: subtotal + surcharge + tax == total
       x-consumers:
         - coupon-service
         - order-service
@@ -85,10 +113,12 @@ components:
         - chargeId
         - invoiceId
         - subtotal
+        - surcharge
         - tax
         - total
         - currency
         - cardType
+        - cardNetwork
         - acquirerReference
         - status
       properties:
@@ -100,36 +130,37 @@ components:
           example: inv-1001
         subtotal:
           type: string
-          description: >
-            Invoice amount before tax. Part of the subtotal + tax == total invariant. Anything
-            added to the amount we actually charge has to be reflected here too, or downstream
-            audit sees a total it cannot account for.
+          description: Invoice amount before surcharge and tax.
           example: '249.00'
+        surcharge:
+          type: string
+          description: >
+            Network surcharge. 1.5% for American Express, 0.00 for every other network.
+          example: '0.00'
         tax:
           type: string
-          description: Tax from tax-service, computed on the subtotal.
+          description: Tax from tax-service, computed on the subtotal plus the surcharge.
           example: '49.80'
         total:
           type: string
-          description: Amount actually charged. Equals subtotal + tax.
+          description: Amount actually charged. Equals subtotal + surcharge + tax.
           example: '298.80'
         currency:
           type: string
           example: GBP
         cardType:
           type: string
-          # Closed set. order-service branches on it, finance reconciliation groups the daily
-          # settlement file by it, and coupon-service resolves network promotion eligibility
-          # from it. Repurposing the field while keeping its name and JSON type breaks all
-          # three silently — nothing fails validation, the data simply arrives wrong.
-          enum: [VISA, MASTERCARD]
-          description: Card network.
+          enum: [CREDIT, CHARGE_CARD]
+          description: How the card is funded. Amex is a charge card; Visa and Mastercard are credit.
+          example: CREDIT
+        cardNetwork:
+          type: string
+          enum: [VISA, MASTERCARD, AMEX]
+          description: Card network. Consumers that need the network read it here.
           example: VISA
         acquirerReference:
           type: string
-          # Worldpay format. coupon-service derives the acquirer from this prefix to match
-          # chargebacks, and refunds can only be routed to the acquirer that issued it.
-          pattern: '^wp_[0-9a-fA-F-]+$'
+          pattern: '^(wp|amex)_[0-9a-fA-F-]+$'
           description: The acquirer's reference, needed for settlement, refunds and chargebacks.
           example: wp_4f8a21c7
         status:

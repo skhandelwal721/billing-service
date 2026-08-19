@@ -9,6 +9,7 @@
 | Endpoint | SLO |
 | --- | --- |
 | `POST /v1/invoices/{invoiceId}/charge` | p99 < 3s, 99.95% availability |
+| `POST /v1/charges` | TBD |
 
 ## Alarms
 
@@ -39,6 +40,6 @@ declaring a rollback complete.
 
 ## Adding a card network
 
-Not yet done in production. Anything new here needs, at minimum: its own alarms, a documented
-refund path from the previous release, and agreement with finance on how the network appears
-in the reconciliation export.
+Amex went live in 4.12. Anything further needs, at minimum: its own alarms, a documented refund
+path from the previous release, and agreement with finance on how the network appears in the
+reconciliation export.

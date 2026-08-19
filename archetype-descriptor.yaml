@@ -17,12 +17,14 @@ compute:
 
 environmentVariables:
   ACQUIRER_BASE_URL: https://api.worldpay.example/v3
+  AMEX_ACQUIRER_BASE_URL: https://api.americanexpress.example/v1
   TAX_SERVICE_BASE_URL: http://tax-service.prod.internal
 
 # Secrets are resolved at deploy time from the platform secret store. Values never appear in
 # this file.
 secrets:
   ACQUIRER_API_KEY: ${secretstore:billing/acquirer/worldpay-live}
+  AMEX_ACQUIRER_API_KEY: ${secretstore:billing/acquirer/amex-direct-live}
 
 # Every money-moving path needs an alarm. A charge that fails silently is discovered by
 # finance during reconciliation, days later.
