@@ -24,10 +24,16 @@ relationship. The two services are siblings, not layered.
 
 The charge response is a published contract. Known consumers:
 
-| Consumer | Reads |
-| --- | --- |
-| `order-service` | `cardType`, `total`, `status` — drives order state and the customer receipt |
-| Finance reconciliation export | `cardType`, `acquirerReference`, `total` — grouped by network for the daily settlement file |
+| Consumer | Tier | Reads |
+| --- | --- | --- |
+| `order-service` | 1 | `cardType`, `total`, `status` — drives order state and the customer receipt |
+| `coupon-service` | 1 | `cardType`, `acquirerReference`, `subtotal`, `tax`, `total` — network promotion eligibility, chargeback matching, redemption audit |
+| Finance reconciliation export | 1 | `cardType`, `acquirerReference`, `total` — grouped by network for the daily settlement file |
+
+`coupon-service` is the only consumer that generates its client DTO from
+[`docs/api/openapi.yaml`](docs/api/openapi.yaml) rather than hand-rolling it, so a response
+field we add lands in their build, not just in their runtime. It also subscribes to
+[`northwind.billing.charge.completed`](docs/api/events.md).
 
 Because reconciliation groups by `cardType`, changing what that field *means* is a breaking
 change even when its name and type stay the same. See

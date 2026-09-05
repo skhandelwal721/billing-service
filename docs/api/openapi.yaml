@@ -1,0 +1,138 @@
+# Published contract for the charge API.
+#
+# This file is the machine-readable form of docs/api/charge.md. It is consumed by
+# `coupon-service` and `order-service` to generate their client DTOs, so a change here
+# propagates into other teams' builds. Treat every constraint below as load-bearing:
+#
+#   - `additionalProperties: false` — generated consumer DTOs reject unknown fields. Adding a
+#     response field is a breaking change for a strict consumer, not an additive one.
+#   - `cardType.enum` — the closed set of values consumers are allowed to switch on.
+#   - `acquirerReference.pattern` — consumers route refunds and match chargebacks off the
+#     prefix. A reference in a new format is unroutable for them.
+#   - `x-invariant` on ChargeResponse — `subtotal + tax == total`. Downstream audit and
+#     settlement both recompute against it.
+openapi: 3.0.3
+
+info:
+  title: billing-service charge API
+  version: 4.11.0
+  description: >
+    Invoicing and card charging for Northwind Retail. The charge response is a published
+    contract with external consumers; see docs/api/charge.md for the stability rules.
+
+servers:
+  - url: http://billing-service.prod.internal
+
+paths:
+  /v1/invoices/{invoiceId}/charge:
+    post:
+      operationId: chargeInvoice
+      summary: Charge an invoice against a card, applying tax.
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChargeRequest'
+      responses:
+        '200':
+          description: Charge taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChargeResponse'
+        '400':
+          description: Card number missing, or the network is not one we accept.
+        '404':
+          description: Invoice not found.
+        '502':
+          description: tax-service could not price the tax. We do not charge an untaxed amount.
+
+components:
+  schemas:
+
+    ChargeRequest:
+      type: object
+      additionalProperties: false
+      required: [cardNumber, currency]
+      properties:
+        cardNumber:
+          type: string
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        billingPostcode:
+          type: string
+
+    ChargeResponse:
+      type: object
+      # Consumers generate strict DTOs from this schema. A new response field fails their
+      # deserialization; it does not pass through harmlessly.
+      additionalProperties: false
+      x-invariant: subtotal + tax == total
+      x-consumers:
+        - coupon-service
+        - order-service
+        - finance-reconciliation-export
+      required:
+        - chargeId
+        - invoiceId
+        - subtotal
+        - tax
+        - total
+        - currency
+        - cardType
+        - acquirerReference
+        - status
+      properties:
+        chargeId:
+          type: string
+          example: chg_9f3b7c21
+        invoiceId:
+          type: string
+          example: inv-1001
+        subtotal:
+          type: string
+          description: >
+            Invoice amount before tax. Part of the subtotal + tax == total invariant. Anything
+            added to the amount we actually charge has to be reflected here too, or downstream
+            audit sees a total it cannot account for.
+          example: '249.00'
+        tax:
+          type: string
+          description: Tax from tax-service, computed on the subtotal.
+          example: '49.80'
+        total:
+          type: string
+          description: Amount actually charged. Equals subtotal + tax.
+          example: '298.80'
+        currency:
+          type: string
+          example: GBP
+        cardType:
+          type: string
+          # Closed set. order-service branches on it, finance reconciliation groups the daily
+          # settlement file by it, and coupon-service resolves network promotion eligibility
+          # from it. Repurposing the field while keeping its name and JSON type breaks all
+          # three silently — nothing fails validation, the data simply arrives wrong.
+          enum: [VISA, MASTERCARD]
+          description: Card network.
+          example: VISA
+        acquirerReference:
+          type: string
+          # Worldpay format. coupon-service derives the acquirer from this prefix to match
+          # chargebacks, and refunds can only be routed to the acquirer that issued it.
+          pattern: '^wp_[0-9a-fA-F-]+$'
+          description: The acquirer's reference, needed for settlement, refunds and chargebacks.
+          example: wp_4f8a21c7
+        status:
+          type: string
+          enum: [CHARGED, DECLINED]
+          example: CHARGED
