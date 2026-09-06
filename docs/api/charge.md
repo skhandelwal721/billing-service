@@ -41,12 +41,44 @@ longer need a separate lookup before charging.
   "invoiceId": "inv-1001",
   "cardNumber": "378282246310005",
   "currency": "GBP",
-  "billingPostcode": "EC2A 4BX"
+  "billingPostcode": "EC2A 4BX",
+  "promotionalAdjustment": "24.90"
 }
 ```
 
 Amex charges carry a 1.5% surcharge, applied to the subtotal before tax, and settle through
 Amex Direct rather than Worldpay — their `acquirerReference` is prefixed `amex_`.
+
+### `promotionalAdjustment`
+
+Optional. Taken off the invoice subtotal before surcharge and tax, so a caller applying a
+discount no longer has to charge the full amount and then raise a refund.
+
+> **An absolute amount, in the charge currency. Not a percentage.** `"24.90"` means twenty-four
+> pounds ninety off a sterling invoice. `"10"` means ten pounds off, **not** ten percent off.
+
+We do not accept a rate, and this is deliberate. The caller knows the basis it applied and we do
+not, so a rate here would mean two services computing the same money figure from different
+inputs and disagreeing quietly. Send us the money.
+
+**There is nothing we can validate this against.** A percentage and an amount are both positive
+decimals smaller than the invoice, so a rate sent by mistake is indistinguishable from an
+amount and will be charged. The two observable consequences:
+
+| Sent | Invoice | What happens |
+| --- | --- | --- |
+| `24.90` (correct amount) | `249.00` | charged on `224.10` + tax |
+| `10` (a rate, by mistake) | `249.00` | charged on `239.00` + tax — **no error, customer overcharged** |
+| `25` (a rate, by mistake) | `18.50` | **`422`** — the adjustment exceeds the subtotal, charge refused |
+
+That last row is the only one that surfaces. A rate mistaken for an amount is silent on every
+invoice larger than the rate, and fails only on invoices smaller than it — so it presents as an
+intermittent checkout failure on small baskets, with correct-looking charges everywhere else.
+
+An adjustment larger than the subtotal is refused rather than clamped to zero or charged as a
+negative: a negative charge is a credit to the cardholder, and taking one by accident is worse
+than failing the request. `POST /v1/invoices/{invoiceId}/charge` does not accept an adjustment
+at all.
 
 ## Contract stability
 

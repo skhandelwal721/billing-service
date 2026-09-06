@@ -37,7 +37,10 @@ public class ChargeService {
         Invoice invoice = invoiceRepository.require(invoiceId);
         CardNetwork network = CardNetwork.fromBin(request.cardNumber());
 
-        BigDecimal subtotal = invoice.subtotal().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal subtotal = applyPromotion(
+                invoiceId,
+                invoice.subtotal().setScale(2, RoundingMode.HALF_UP),
+                request.promotionalAdjustment());
 
         BigDecimal surcharge = network == CardNetwork.AMEX
                 ? subtotal.multiply(AmexAcquirerClient.SURCHARGE_RATE).setScale(2, RoundingMode.HALF_UP)
@@ -69,5 +72,51 @@ public class ChargeService {
                 network.code(),
                 result.acquirerReference(),
                 result.status());
+    }
+
+    /**
+     * Applies a promotional deduction to the invoice subtotal.
+     *
+     * <p>The deduction is an <strong>absolute amount in the charge currency</strong>, exactly as
+     * {@link ChargeRequest#promotionalAdjustment} documents. We take it at face value: we have
+     * no way to tell a well-formed amount from a well-formed rate, because both are positive
+     * decimals smaller than the invoice, so there is nothing here to validate against.
+     *
+     * <p>What we can check is that the deduction does not exceed the invoice. A deduction larger
+     * than the subtotal is refused rather than clamped to zero or charged as a negative — a
+     * negative charge is a credit to the cardholder, and taking one by accident is worse than
+     * failing the request.
+     */
+    private BigDecimal applyPromotion(String invoiceId, BigDecimal subtotal, BigDecimal adjustment) {
+        if (adjustment == null || adjustment.signum() == 0) {
+            return subtotal;
+        }
+
+        if (adjustment.signum() < 0) {
+            throw new PromotionNotApplicableException(
+                    "promotionalAdjustment " + adjustment + " is negative — an adjustment is a"
+                            + " deduction, so it cannot increase the amount charged");
+        }
+
+        if (adjustment.compareTo(subtotal) > 0) {
+            log.warn("refusing charge invoiceId={} adjustment={} exceeds subtotal={}",
+                    invoiceId, adjustment, subtotal);
+            throw new PromotionNotApplicableException(
+                    "promotionalAdjustment " + adjustment + " exceeds the invoice subtotal "
+                            + subtotal + " — an absolute amount in the charge currency is"
+                            + " expected, see docs/api/charge.md");
+        }
+
+        BigDecimal net = subtotal.subtract(adjustment).setScale(2, RoundingMode.HALF_UP);
+        log.info("applied promotion invoiceId={} subtotal={} adjustment={} net={}",
+                invoiceId, subtotal, adjustment, net);
+        return net;
+    }
+
+    /** The adjustment supplied cannot be applied to this invoice. */
+    public static class PromotionNotApplicableException extends RuntimeException {
+        public PromotionNotApplicableException(String message) {
+            super(message);
+        }
     }
 }

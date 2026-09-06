@@ -69,6 +69,6 @@ class ChargeRiskGuardTest {
     }
 
     private static ChargeRequest request(String pan) {
-        return new ChargeRequest(pan, "GBP", "EC2A 4BX");
+        return new ChargeRequest(pan, "GBP", "EC2A 4BX", null);
     }
 }
