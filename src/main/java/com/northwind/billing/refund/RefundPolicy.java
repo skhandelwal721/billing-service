@@ -27,7 +27,8 @@ public class RefundPolicy {
      */
     private static final Map<CardNetwork, Duration> WINDOWS = Map.of(
             CardNetwork.VISA, Duration.ofDays(180),
-            CardNetwork.MASTERCARD, Duration.ofDays(120));
+            CardNetwork.MASTERCARD, Duration.ofDays(120),
+            CardNetwork.AMEX, Duration.ofDays(120));
 
     public Duration windowFor(CardNetwork network) {
         Duration window = WINDOWS.get(network);

@@ -26,7 +26,8 @@ public class InterchangeRates {
      */
     private static final Map<String, BigDecimal> RATES = Map.of(
             "VISA", new BigDecimal("0.0030"),
-            "MASTERCARD", new BigDecimal("0.0035"));
+            "MASTERCARD", new BigDecimal("0.0035"),
+            "AMEX", new BigDecimal("0.0175"));
 
     /**
      * Rate for a card type, or {@code null} when we have no agreed rate for it.
