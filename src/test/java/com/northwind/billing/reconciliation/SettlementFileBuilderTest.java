@@ -17,9 +17,9 @@ class SettlementFileBuilderTest {
     @Test
     void groupsRowsByCardNetwork() {
         SettlementFile file = builder.build("2026-09-01", List.of(
-                charge("chg_1", "VISA", "249.00", "49.80"),
-                charge("chg_2", "VISA", "100.00", "20.00"),
-                charge("chg_3", "MASTERCARD", "18.50", "3.70")));
+                charge("chg_1", "VISA", "VISA", "249.00", "49.80"),
+                charge("chg_2", "VISA", "VISA", "100.00", "20.00"),
+                charge("chg_3", "MASTERCARD", "MASTERCARD", "18.50", "3.70")));
 
         assertEquals(3, file.rowCount());
         assertEquals(2, file.sections().get("VISA").size());
@@ -30,7 +30,7 @@ class SettlementFileBuilderTest {
     @Test
     void deductsInterchangeFromGrossToGetNet() {
         SettlementFile file = builder.build("2026-09-01", List.of(
-                charge("chg_1", "VISA", "1000.00", "200.00")));
+                charge("chg_1", "VISA", "VISA", "1000.00", "200.00")));
 
         SettlementRow row = file.sections().get("VISA").get(0);
         assertEquals(new BigDecimal("1200.00"), row.gross());
@@ -47,7 +47,7 @@ class SettlementFileBuilderTest {
     @Test
     void unratedCardTypeBecomesAnExceptionRatherThanASection() {
         SettlementFile file = builder.build("2026-09-01", List.of(
-                charge("chg_1", "CHARGE_CARD", "249.00", "49.80")));
+                charge("chg_1", "CHARGE_CARD", "AMEX", "249.00", "49.80")));
 
         assertEquals(0, file.rowCount());
         assertEquals(1, file.exceptions().size());
@@ -69,6 +69,7 @@ class SettlementFileBuilderTest {
                 new BigDecimal("49.80"),
                 new BigDecimal("302.53"),
                 "GBP",
+                "CREDIT",
                 "VISA",
                 "wp_4f8a21c7",
                 "CHARGED");
@@ -94,7 +95,8 @@ class SettlementFileBuilderTest {
         }
     }
 
-    private static ChargeResponse charge(String chargeId, String cardType, String subtotal, String tax) {
+    private static ChargeResponse charge(String chargeId, String cardType, String cardNetwork,
+                                        String subtotal, String tax) {
         BigDecimal net = new BigDecimal(subtotal);
         BigDecimal taxAmount = new BigDecimal(tax);
         return new ChargeResponse(
@@ -106,6 +108,7 @@ class SettlementFileBuilderTest {
                 net.add(taxAmount),
                 "GBP",
                 cardType,
+                cardNetwork,
                 "wp_" + chargeId,
                 "CHARGED");
     }
