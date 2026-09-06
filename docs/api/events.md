@@ -15,10 +15,12 @@ must key off `chargeId`.
   "chargeId": "chg_9f3b7c21",
   "invoiceId": "inv-1001",
   "subtotal": "249.00",
+  "surcharge": "0.00",
   "tax": "49.80",
   "total": "298.80",
   "currency": "GBP",
-  "cardType": "VISA",
+  "cardType": "CREDIT",
+  "cardNetwork": "VISA",
   "acquirerReference": "wp_4f8a21c7",
   "status": "CHARGED",
   "occurredAt": "2026-09-01T10:14:22Z"
@@ -33,17 +35,16 @@ meaning changes it on both paths at once.
 
 | Subscriber | Reads | Why |
 | --- | --- | --- |
-| `coupon-service` | `cardType`, `acquirerReference`, `subtotal`, `tax`, `total` | Audits each redemption against the charge that settled it, and matches chargebacks by acquirer prefix |
-| `order-service` | `cardType`, `total`, `status` | Releases the order and picks the receipt template |
+| `coupon-service` | `cardNetwork`, `acquirerReference`, `subtotal`, `tax`, `total` | Audits each redemption against the charge that settled it, and matches chargebacks by acquirer prefix |
+| `order-service` | `cardNetwork`, `total`, `status` | Releases the order and picks the receipt template |
 
 ## Compatibility rules
 
-1. **`cardType` carries the card network** — `VISA` or `MASTERCARD`. Subscribers switch on it.
-2. **`acquirerReference` is prefixed by acquirer** — `wp_` for Worldpay. Subscribers derive the
-   acquirer from the prefix; a new prefix is an unrecognised acquirer to them.
-3. **`subtotal + tax == total`.** Subscribers recompute against this to detect mispriced
-   charges. Adding anything to `total` without a matching field breaks the check.
-4. Adding a field to this payload requires notifying every subscriber first. Subscribers
-   generate their deserializers from
-   [`docs/api/openapi.yaml`](openapi.yaml), which is strict — an unknown field is a
-   deserialization failure, not a no-op.
+1. **`cardType` carries the funding type** — `CREDIT` or `CHARGE_CARD`. The network moved to
+   `cardNetwork`; subscribers that switch on the network read it there.
+2. **`acquirerReference` is prefixed by acquirer** — `wp_` for Worldpay, `amex_` for Amex
+   Direct.
+3. **`subtotal + surcharge + tax == total`.** `surcharge` is `0.00` on every network except
+   Amex.
+4. New fields are additive. [`docs/api/openapi.yaml`](openapi.yaml) allows unknown properties,
+   so a subscriber that has not picked them up is unaffected.

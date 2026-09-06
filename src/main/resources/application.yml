@@ -16,6 +16,9 @@ server:
 acquirer:
   baseUrl: ${ACQUIRER_BASE_URL}
   apiKey: ${ACQUIRER_API_KEY}
+  amex:
+    baseUrl: ${AMEX_ACQUIRER_BASE_URL}
+    apiKey: ${AMEX_ACQUIRER_API_KEY}
 
 clients:
   tax:

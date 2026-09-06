@@ -20,14 +20,33 @@ Worldpay acquirer.
   "chargeId": "chg_9f3b7c21",
   "invoiceId": "inv-1001",
   "subtotal": "249.00",
+  "surcharge": "0.00",
   "tax": "49.80",
   "total": "298.80",
   "currency": "GBP",
-  "cardType": "VISA",
+  "cardType": "CREDIT",
+  "cardNetwork": "VISA",
   "acquirerReference": "wp_4f8a21c7",
   "status": "CHARGED"
 }
 ```
+
+## `POST /v1/charges`
+
+The new consolidated endpoint. Same response, but the invoice goes in the body so callers no
+longer need a separate lookup before charging.
+
+```json
+{
+  "invoiceId": "inv-1001",
+  "cardNumber": "378282246310005",
+  "currency": "GBP",
+  "billingPostcode": "EC2A 4BX"
+}
+```
+
+Amex charges carry a 1.5% surcharge, applied to the subtotal before tax, and settle through
+Amex Direct rather than Worldpay — their `acquirerReference` is prefixed `amex_`.
 
 ## Contract stability
 
@@ -40,9 +59,9 @@ consumers.
 
 | Field | Consumer | Used for |
 | --- | --- | --- |
-| `cardType` | `order-service` | branches on the network to set order state and choose the receipt template |
-| `cardType` | finance reconciliation | groups the daily settlement file by network |
-| `cardType` | `coupon-service` | resolves network promotion eligibility — some promotions are funded by one network's interchange and must not apply to another |
+| `cardNetwork` | `order-service` | order state and receipt template |
+| `cardNetwork` | finance reconciliation | groups the daily settlement file by network |
+| `cardNetwork` | `coupon-service` | network promotion eligibility |
 | `acquirerReference` | finance reconciliation, refunds | matching our charges to the acquirer's settlement report |
 | `acquirerReference` | `coupon-service` | derives the acquirer from the `wp_` prefix to match inbound chargebacks and reverse the coupon liability |
 | `subtotal`, `tax`, `total` | `coupon-service` | recomputes the discount it applied against `subtotal + tax == total`; a total it cannot account for is treated as a mispriced charge and held |
@@ -50,25 +69,19 @@ consumers.
 
 ### `cardType` values
 
-`VISA` or `MASTERCARD`. Nothing else is currently emitted.
+`CREDIT` or `CHARGE_CARD`. Amex is a charge card; Visa and Mastercard are credit.
 
-**Adding a value is a change consumers must be told about.** `order-service` branches on this
-field, and an unrecognised value falls through to its default path rather than failing loudly.
-
-**Changing what the field means is worse.** The name and JSON type stay the same, so nothing
-fails validation — the data simply arrives wrong, and reconciliation groups money under the
-wrong heading. If new information needs to be carried, add a new field and leave `cardType`
-alone.
+Previously this field carried the card network, which was always a slightly loose use of the
+name. With Amex in the mix the funding distinction genuinely matters, so the network moved to
+`cardNetwork` and `cardType` now says what it sounds like it says. Nothing is lost — the
+network is still on the response, one field along.
 
 ### Response invariants
 
-`subtotal + tax == total`. This is the only arithmetic check between a mispriced charge and
-everything downstream of it: the settlement file rejects a row that does not balance, and
-`coupon-service` holds a redemption whose charge it cannot account for.
+`subtotal + surcharge + tax == total`. `surcharge` is `0.00` on every network except Amex, so
+the identity is unchanged in practice for existing traffic.
 
-Anything new that we add to the amount actually charged has to be represented in a field of its
-own **and** accounted for in this identity. Folding an amount into `total` while leaving
-`subtotal` alone does not fail here — it fails in two other services, hours later.
+`subtotal` stays the pre-surcharge invoice amount, which is what it always meant.
 
 ## Errors
 
