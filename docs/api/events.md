@@ -36,7 +36,6 @@ meaning changes it on both paths at once.
 | Subscriber | Reads | Why |
 | --- | --- | --- |
 | `coupon-service` | `cardNetwork`, `acquirerReference`, `subtotal`, `tax`, `total` | Audits each redemption against the charge that settled it, and matches chargebacks by acquirer prefix |
-| `order-service` | `cardNetwork`, `total`, `status` | Releases the order and picks the receipt template |
 
 ## Compatibility rules
 

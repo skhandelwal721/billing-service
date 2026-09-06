@@ -59,13 +59,11 @@ consumers.
 
 | Field | Consumer | Used for |
 | --- | --- | --- |
-| `cardNetwork` | `order-service` | order state and receipt template |
 | `cardNetwork` | finance reconciliation | groups the daily settlement file by network |
 | `cardNetwork` | `coupon-service` | network promotion eligibility |
 | `acquirerReference` | finance reconciliation, refunds | matching our charges to the acquirer's settlement report |
 | `acquirerReference` | `coupon-service` | derives the acquirer from the `wp_` prefix to match inbound chargebacks and reverse the coupon liability |
 | `subtotal`, `tax`, `total` | `coupon-service` | recomputes the discount it applied against `subtotal + tax == total`; a total it cannot account for is treated as a mispriced charge and held |
-| `total`, `status` | `order-service` | order total and whether to release the order |
 
 ### `cardType` values
 

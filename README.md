@@ -28,9 +28,8 @@ The charge response is a published contract. Known consumers:
 
 | Consumer | Tier | Reads |
 | --- | --- | --- |
-| `order-service` | 1 | `cardNetwork`, `total`, `status` — drives order state and the customer receipt |
 | `coupon-service` | 1 | `cardNetwork`, `acquirerReference`, `subtotal`, `tax`, `total` — network promotion eligibility, chargeback matching, redemption audit |
-| Finance reconciliation export | 1 | `cardNetwork`, `acquirerReference`, `total` — grouped by network for the daily settlement file |
+| Finance reconciliation export | 1 | `cardNetwork`, `acquirerReference`, `total` — grouped by network for the daily settlement file. In-repo: `reconciliation/SettlementFileBuilder` |
 
 `coupon-service` also subscribes to
 [`northwind.billing.charge.completed`](docs/api/events.md).

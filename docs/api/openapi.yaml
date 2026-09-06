@@ -1,7 +1,7 @@
 # Published contract for the charge API.
 #
 # This file is the machine-readable form of docs/api/charge.md. It is consumed by
-# `coupon-service` and `order-service` to generate their client DTOs, so a change here
+# `coupon-service` to generate its client DTO, so a change here
 # propagates into other teams' builds. Treat every constraint below as load-bearing:
 #
 #   - `cardType.enum` — the funding type. `cardNetwork` carries the network.
@@ -107,7 +107,6 @@ components:
       x-invariant: subtotal + surcharge + tax == total
       x-consumers:
         - coupon-service
-        - order-service
         - finance-reconciliation-export
       required:
         - chargeId
