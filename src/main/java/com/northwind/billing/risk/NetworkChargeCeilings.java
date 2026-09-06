@@ -26,7 +26,8 @@ public class NetworkChargeCeilings {
      */
     private static final Map<CardNetwork, BigDecimal> CEILINGS = Map.of(
             CardNetwork.VISA, new BigDecimal("5000.00"),
-            CardNetwork.MASTERCARD, new BigDecimal("5000.00"));
+            CardNetwork.MASTERCARD, new BigDecimal("5000.00"),
+            CardNetwork.AMEX, new BigDecimal("10000.00"));
 
     /** Ceiling for a network, or {@code null} when no exposure limit has been agreed. */
     public BigDecimal ceilingFor(CardNetwork network) {
