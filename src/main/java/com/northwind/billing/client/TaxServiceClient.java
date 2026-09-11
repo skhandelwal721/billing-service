@@ -13,6 +13,11 @@ import java.time.Duration;
  *
  * <p>Hard dependency — we do not charge an amount we have not taxed correctly, so there is no
  * fallback. Timeouts are set to tax-service's published p99 of 400ms.
+ *
+ * <p>The {@code jurisdiction} argument is the VAT place of supply, resolved by
+ * {@link PlaceOfSupply} from the charge's {@code billingPostcode}. tax-service applies the rate
+ * for that member state — it does not second-guess the jurisdiction we send it, so an
+ * incorrectly resolved jurisdiction returns a well-formed tax figure at the wrong rate.
  */
 @Component
 public class TaxServiceClient {
@@ -32,10 +37,12 @@ public class TaxServiceClient {
                 .build();
     }
 
-    public BigDecimal taxFor(String invoiceId, BigDecimal subtotal, String currency, String postcode) {
+    public BigDecimal taxFor(String invoiceId, BigDecimal subtotal, String currency,
+                             String postcode, String jurisdiction) {
         return restClient.get()
-                .uri("/v1/tax?invoiceId={invoiceId}&amount={amount}&currency={currency}&postcode={postcode}",
-                        invoiceId, subtotal, currency, postcode)
+                .uri("/v1/tax?invoiceId={invoiceId}&amount={amount}&currency={currency}"
+                                + "&postcode={postcode}&jurisdiction={jurisdiction}",
+                        invoiceId, subtotal, currency, postcode, jurisdiction)
                 .retrieve()
                 .body(TaxResult.class)
                 .taxAmount();

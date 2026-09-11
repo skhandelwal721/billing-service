@@ -120,3 +120,28 @@ the identity is unchanged in practice for existing traffic.
 | `400` | card number missing or the network is not one we accept |
 | `404` | invoice not found |
 | `502` | `tax-service` could not price the tax — we do not charge an untaxed amount |
+
+
+## `billingPostcode` and EU place of supply
+
+`billingPostcode` is **optional on the wire and load-bearing in law.** It is the jurisdiction
+input for VAT place-of-supply determination under EU Council Directive 2006/112/EC: a B2C supply
+is taxed at the rate of the customer's member state, not ours.
+
+`PlaceOfSupply.forPostcode(...)` resolves it, and `ChargeService` forwards the result to
+tax-service as the `jurisdiction` parameter.
+
+| Sent | Result |
+| --- | --- |
+| `DE-10115` | taxed as a German supply, declared in DE |
+| `FR-75001` | taxed as a French supply, declared in FR |
+| absent, blank, or an unrecognised prefix | **falls back to `GB`** — the merchant's own establishment |
+
+**The fallback is the hazard.** There is no `@NotBlank` on the field, because the finance
+reconciliation replay path re-charges historic invoices that predate its collection. So a caller
+that stops sending it does not get a validation error — it gets a successful charge at the wrong
+rate, declared in the wrong member state. The only signal is a `WARN` line reading
+*"no billingPostcode on the charge"*.
+
+If you are removing this field from a request for data-minimisation reasons, that is a
+Tax & Finance decision, not an engineering one.

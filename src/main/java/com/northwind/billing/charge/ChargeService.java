@@ -4,6 +4,7 @@ import com.northwind.billing.acquirer.AcquirerClient;
 import com.northwind.billing.acquirer.AmexAcquirerClient;
 import com.northwind.billing.card.CardFundingType;
 import com.northwind.billing.card.CardNetwork;
+import com.northwind.billing.client.PlaceOfSupply;
 import com.northwind.billing.client.TaxServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,15 +23,18 @@ public class ChargeService {
     private final AmexAcquirerClient amexAcquirerClient;
     private final TaxServiceClient taxServiceClient;
     private final InvoiceRepository invoiceRepository;
+    private final PlaceOfSupply placeOfSupply;
 
     public ChargeService(AcquirerClient acquirerClient,
                          AmexAcquirerClient amexAcquirerClient,
                          TaxServiceClient taxServiceClient,
-                         InvoiceRepository invoiceRepository) {
+                         InvoiceRepository invoiceRepository,
+                         PlaceOfSupply placeOfSupply) {
         this.acquirerClient = acquirerClient;
         this.amexAcquirerClient = amexAcquirerClient;
         this.taxServiceClient = taxServiceClient;
         this.invoiceRepository = invoiceRepository;
+        this.placeOfSupply = placeOfSupply;
     }
 
     public ChargeResponse charge(String invoiceId, ChargeRequest request) {
@@ -47,8 +51,19 @@ public class ChargeService {
                 : BigDecimal.ZERO.setScale(2);
 
         BigDecimal taxable = subtotal.add(surcharge);
+
+        // EU place of supply. Resolved from billingPostcode, which is optional on the wire and
+        // load-bearing in law — see PlaceOfSupply. An unresolved jurisdiction taxes a
+        // cross-border supply at our home rate and declares it in the wrong member state.
+        String jurisdiction = placeOfSupply.forPostcode(request.billingPostcode());
+        if (!placeOfSupply.isResolved(request.billingPostcode())) {
+            log.warn("charging invoiceId={} with an unresolved VAT jurisdiction — defaulted to {}",
+                    invoiceId, jurisdiction);
+        }
+
         BigDecimal tax = taxServiceClient
-                .taxFor(invoiceId, taxable, request.currency(), request.billingPostcode())
+                .taxFor(invoiceId, taxable, request.currency(), request.billingPostcode(),
+                        jurisdiction)
                 .setScale(2, RoundingMode.HALF_UP);
         BigDecimal total = taxable.add(tax);
 

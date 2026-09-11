@@ -19,6 +19,13 @@
 
     <properties>
         <java.version>17</java.version>
+        <!--
+          The redemption event contract we consume from coupon-service. Hand-written DTO, not
+          generated: RedemptionCompletedEvent is written against coupon-service
+          docs/api/redemption.md at this version, and is strict, so a field they add or rename
+          without a coordinated bump here stops our rebate attribution.
+        -->
+        <coupon.contract.version>2.4.0</coupon.contract.version>
     </properties>
 
     <dependencies>
