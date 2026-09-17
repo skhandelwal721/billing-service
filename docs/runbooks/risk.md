@@ -2,7 +2,7 @@
 
 **Service:** `billing-service`
 **Owning team:** billing-platform
-**Escalation:** `#northwind-billing`, then `#northwind-fraud` for exposure limits
+**Escalation:** `#beaconstone-billing`, then `#beaconstone-fraud` for exposure limits
 
 ## What the guard does
 
@@ -13,7 +13,7 @@ able to route. So the check is deliberately on the *pre*-acquirer side of the ch
 | Check | Outcome when it fails |
 | --- | --- |
 | invoice amount within the network's exposure ceiling | `409`, no money moves, manual review |
-| network has an agreed exposure ceiling at all | `409`, no money moves, escalate to `#northwind-fraud` |
+| network has an agreed exposure ceiling at all | `409`, no money moves, escalate to `#beaconstone-fraud` |
 
 ## Where it is called from
 
@@ -71,7 +71,7 @@ service's build.
 
 Before the first charge on a new network can be taken:
 
-1. agree an exposure ceiling with `#northwind-fraud` and add it to `NetworkChargeCeilings`;
+1. agree an exposure ceiling with `#beaconstone-fraud` and add it to `NetworkChargeCeilings`;
 2. confirm the refund path for the network exists — see [`docs/api/refunds.md`](../api/refunds.md);
 3. confirm finance can book it — see [`docs/api/settlement.md`](../api/settlement.md).
 

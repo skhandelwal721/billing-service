@@ -28,4 +28,4 @@ clients:
 
 logging:
   level:
-    com.northwind.billing: INFO
+    com.beaconstone.billing: INFO

@@ -4,14 +4,14 @@ Every completed charge is published to one topic. The payload is a published con
 same sense as the HTTP response — see [`docs/api/charge.md`](charge.md) — and it is the only
 way asynchronous consumers learn that money moved.
 
-## `northwind.billing.charge.completed`
+## `beaconstone.billing.charge.completed`
 
 Published once per charge, after the acquirer confirms. At-least-once delivery, so consumers
 must key off `chargeId`.
 
 ```json
 {
-  "eventType": "northwind.billing.charge.completed",
+  "eventType": "beaconstone.billing.charge.completed",
   "chargeId": "chg_9f3b7c21",
   "invoiceId": "inv-1001",
   "subtotal": "249.00",
@@ -52,7 +52,7 @@ meaning changes it on both paths at once.
 
 # Coupon redemption events (inbound)
 
-## `northwind.coupon.redemption.completed`
+## `beaconstone.coupon.redemption.completed`
 
 Published by **coupon-service**, consumed by us. This is the only inbound contract we take from
 coupon-service; every other interaction is them calling our charge API.
@@ -62,7 +62,7 @@ strictly in `RedemptionCompletedEvent`.
 
 ```json
 {
-  "eventType": "northwind.coupon.redemption.completed",
+  "eventType": "beaconstone.coupon.redemption.completed",
   "redemptionId": "rdm_4f8a21c7",
   "couponCode": "NW-VISA-10",
   "chargeId": "chg_9f3b7c21",
@@ -90,4 +90,4 @@ strictly in `RedemptionCompletedEvent`.
 3. `discount` stays an absolute amount in the charge currency, on the same basis as
    `promotionalAdjustment` on our charge request.
 4. Any change to a field's name, type or meaning is a major bump, announced before it ships, per
-   the Northwind Engineering Change Standards (ECS-3).
+   the Beacon Stone Engineering Change Standards (ECS-3).

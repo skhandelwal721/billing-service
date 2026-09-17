@@ -1,6 +1,6 @@
 # billing-service
 
-Owns invoices and card charging for Northwind Retail. Live since 2024 and processing
+Owns invoices and card charging for Beacon Stone Retail. Live since 2024 and processing
 production traffic continuously — every charge this service takes is money moving.
 
 ## Responsibilities
@@ -32,7 +32,7 @@ The charge response is a published contract. Known consumers:
 | Finance reconciliation export | 1 | `cardNetwork`, `acquirerReference`, `total` — grouped by network for the daily settlement file. In-repo: `reconciliation/SettlementFileBuilder` |
 
 `coupon-service` also subscribes to
-[`northwind.billing.charge.completed`](docs/api/events.md).
+[`beaconstone.billing.charge.completed`](docs/api/events.md).
 
 See [`docs/api/charge.md`](docs/api/charge.md) for the response shape.
 

@@ -2,7 +2,7 @@
 
 **Service:** `billing-service`
 **Owning team:** billing-platform
-**Escalation:** `#northwind-billing`, on-call schedule `billing-platform_schedule`
+**Escalation:** `#beaconstone-billing`, on-call schedule `billing-platform_schedule`
 
 ## Endpoints
 
@@ -18,7 +18,7 @@
 | `ChargeErrorRate` (P1) | Check acquirer status, then `tax-service`. Every 5xx here is a charge that didn't happen. |
 | `ChargeDeclineRate` (P2) | A spike usually means an acquirer-side rule change, not our bug. |
 | `AcquirerLatencyP99` (P2) | Check the Worldpay status page before assuming it's us. |
-| `TaxServiceErrorRate` (P2) | Charges will be failing closed. Escalate to `#northwind-tax`. |
+| `TaxServiceErrorRate` (P2) | Charges will be failing closed. Escalate to `#beaconstone-tax`. |
 
 ## Rollback
 

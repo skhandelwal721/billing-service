@@ -13,7 +13,7 @@ info:
   title: billing-service charge API
   version: 4.12.0
   description: >
-    Invoicing and card charging for Northwind Retail. The charge response is a published
+    Invoicing and card charging for Beacon Stone Retail. The charge response is a published
     contract with external consumers; see docs/api/charge.md for the stability rules.
 
 servers:
