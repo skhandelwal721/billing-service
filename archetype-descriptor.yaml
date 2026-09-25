@@ -3,6 +3,7 @@ name: billing-service
 description: Invoicing and card charging for Beacon Stone Retail
 organization: beacon-stone-retail
 owner: billing-platform
+tier: 4
 notifications:
   email: billing-platform@beaconstone.example
 

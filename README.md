@@ -1,6 +1,7 @@
 # billing-service
 
-Owns invoices and card charging for Beacon Stone Retail. Live since 2024 and processing
+Owns invoices and card charging for Beacon Stone Retail. Tier 4 in the Beacon Stone platform
+catalogue. Live since 2024 and processing
 production traffic continuously — every charge this service takes is money moving.
 
 ## Responsibilities
